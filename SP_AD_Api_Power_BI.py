@@ -1,3 +1,5 @@
+# Some logs are prints and have been commented out for now, please remove comment if needed
+
 import gzip
 import io
 import os
@@ -37,6 +39,7 @@ marketplaces = {
     'AU': Marketplaces.AU, 'JP': Marketplaces.JP, 'SG': Marketplaces.SG, 'US': Marketplaces.US,
     'BR': Marketplaces.BR, 'CA': Marketplaces.CA, 'MX': Marketplaces.MX
 }
+
 
 # Initialize SQLite database
 def init_db():
@@ -91,10 +94,12 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 init_db()
 
+
 def save_tokens(access_token, refresh_token):
-    print(f"Saving tokens: access_token={access_token}, refresh_token={refresh_token}")
+    # print(f"Saving tokens: access_token={access_token}, refresh_token={refresh_token}")
     conn = sqlite3.connect('tokens.db')
     c = conn.cursor()
     c.execute('DELETE FROM tokens')
@@ -102,16 +107,18 @@ def save_tokens(access_token, refresh_token):
     conn.commit()
     conn.close()
 
+
 def get_tokens():
     conn = sqlite3.connect('tokens.db')
     c = conn.cursor()
     c.execute('SELECT access_token, refresh_token FROM tokens')
     tokens = c.fetchone()
     conn.close()
-    print(f"Retrieved tokens from DB: {tokens}")
+    #print(f"Retrieved tokens from DB: {tokens}")
     if tokens:
         return {'access_token': tokens[0], 'refresh_token': tokens[1]}
     return None
+
 
 def get_access_token():
     tokens = get_tokens()
@@ -127,11 +134,12 @@ def get_access_token():
     response = requests.post(TOKEN_URL, data=token_data)
     if response.status_code == 200:
         tokens = response.json()
-        print(f"Refreshed tokens: {tokens}")
+        #print(f"Refreshed tokens: {tokens}")
         save_tokens(tokens['access_token'], tokens['refresh_token'])
         return tokens['access_token']
     else:
         raise ValueError(f"Failed to refresh token: {response.text}")
+
 
 def get_credentials():
     access_token = get_access_token()
@@ -141,6 +149,7 @@ def get_credentials():
         'client_secret': CLIENT_SECRET,
         'refresh_token': get_tokens()['refresh_token']
     }
+
 
 def save_profiles(profiles):
     conn = sqlite3.connect('tokens.db')
@@ -163,6 +172,7 @@ def save_profiles(profiles):
     conn.commit()
     conn.close()
 
+
 def get_profiles_from_db():
     conn = sqlite3.connect('tokens.db')
     c = conn.cursor()
@@ -170,6 +180,7 @@ def get_profiles_from_db():
     profiles = c.fetchall()
     conn.close()
     return profiles
+
 
 def save_report_cache(profile_id, start_date, end_date, report_type, time_unit, marketplace, report_id):
     conn = sqlite3.connect('tokens.db')
@@ -180,6 +191,7 @@ def save_report_cache(profile_id, start_date, end_date, report_type, time_unit, 
     ''', (profile_id, start_date, end_date, report_type, time_unit, marketplace, report_id))
     conn.commit()
     conn.close()
+
 
 def get_report_cache(profile_id, start_date, end_date, report_type, time_unit, marketplace):
     conn = sqlite3.connect('tokens.db')
@@ -193,7 +205,9 @@ def get_report_cache(profile_id, start_date, end_date, report_type, time_unit, m
     conn.close()
     return result[0] if result else None
 
-def save_request_queue(profile_id, start_date, end_date, report_type, time_unit, marketplace, user_ip, status='pending'):
+
+def save_request_queue(profile_id, start_date, end_date, report_type, time_unit, marketplace, user_ip,
+                       status='pending'):
     conn = sqlite3.connect('tokens.db')
     c = conn.cursor()
     c.execute('''
@@ -203,6 +217,7 @@ def save_request_queue(profile_id, start_date, end_date, report_type, time_unit,
     conn.commit()
     conn.close()
 
+
 def get_pending_requests():
     conn = sqlite3.connect('tokens.db')
     c = conn.cursor()
@@ -210,6 +225,7 @@ def get_pending_requests():
     requests = c.fetchall()
     conn.close()
     return requests
+
 
 def update_request_status(request_id, status):
     conn = sqlite3.connect('tokens.db')
@@ -222,6 +238,7 @@ def update_request_status(request_id, status):
     conn.commit()
     conn.close()
 
+
 def process_request_queue():
     while True:
         pending_requests = get_pending_requests()
@@ -230,16 +247,19 @@ def process_request_queue():
                 try:
                     request_id, profile_id, start_date, end_date, report_type, time_unit, marketplace, user_ip = request_data[0:8]
                     update_request_status(request_id, 'processing')
-                    report_data = request_and_download_report(profile_id, start_date, end_date, marketplaces[marketplace], report_type, time_unit)
+                    report_data = request_and_download_report(profile_id, start_date, end_date,
+                                                              marketplaces[marketplace], report_type, time_unit)
                     update_request_status(request_id, 'completed')
                 except Exception as e:
                     print(f"Error processing request {request_data}: {e}")
                     update_request_status(request_id, 'failed')
         time.sleep(10)
 
+
 @app.route('/')
 def home():
     return 'Middleware for Amazon Advertising API is running'
+
 
 @app.route('/authorize')
 def authorize():
@@ -251,6 +271,7 @@ def authorize():
     }
     url = f"{AUTHORIZATION_URL}?{urlencode(params)}"
     return redirect(url)
+
 
 @app.route('/amazonlogin')
 def callback():
@@ -266,7 +287,7 @@ def callback():
         response = requests.post(TOKEN_URL, data=token_data)
         if response.status_code == 200:
             tokens = response.json()
-            print(f"Authorization tokens received: {tokens}")
+            # print(f"Authorization tokens received: {tokens}")
             session['access_token'] = tokens['access_token']
             session['refresh_token'] = tokens['refresh_token']
             save_tokens(tokens['access_token'], tokens['refresh_token'])
@@ -274,6 +295,7 @@ def callback():
         else:
             return f"Failed to fetch tokens: {response.text}", 400
     return "Authorization failed", 400
+
 
 @app.route('/get-profiles', methods=['GET'])
 def get_profiles():
@@ -294,6 +316,7 @@ def get_profiles():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+
 def request_and_download_report(profile_id, start_date, end_date, marketplace, report_type="spAdvertisedProduct",
                                 time_unit="SUMMARY"):
     try:
@@ -302,8 +325,9 @@ def request_and_download_report(profile_id, start_date, end_date, marketplace, r
         print(e)
         exit(1)  # Or handle more gracefully
 
-    print(f"Using credentials: {credentials}")
-    print(f"Requesting report for profile_id={profile_id}, start_date={start_date}, end_date={end_date}, marketplace={marketplace}, report_type={report_type}, time_unit={time_unit}")
+    #print(f"Using credentials: {credentials}")
+    """print(
+        f"Requesting report for profile_id={profile_id}, start_date={start_date}, end_date={end_date}, marketplace={marketplace}, report_type={report_type}, time_unit={time_unit}")"""
 
     # Ensure the date range is within the last 90 days
     today = datetime.utcnow()
@@ -386,24 +410,26 @@ def request_and_download_report(profile_id, start_date, end_date, marketplace, r
     # Poll the report status until it is available
     while True:
         try:
-            report_status = reports.get_report(reportId=report_id)
-            print(report_status.payload['status'])
-            if report_status.payload['status'] == 'COMPLETED':
+            report = reports.get_report(reportId=report_id)
+            report_status = report.payload['status']
+            print(report_status)
+            if report_status == 'COMPLETED':
                 print("REPORT STATUS: COMPLETED")
                 break
-            elif report_status.payload['status'] == 'FAILED':
+            elif report_status == 'FAILED':
                 print("REPORT STATUS: FAILED")
                 return jsonify({'status': 'error', 'message': 'Failed to generate report'}), 500
+            time.sleep(10)  # Wait for 10 seconds before checking the status again
         except AdvertisingApiException as e:
             print(f"Advertising API Exception: {e}")
-            if e.status_code == 429:
+            if e.code == 429:
                 time.sleep(60)  # Wait for 1 minute if rate limited
             else:
                 raise e
         time.sleep(10)  # Wait for 10 seconds before checking the status again
 
     # Download the report
-    download_url = report_status.payload['url']
+    download_url = report.payload['url']
     report_data = requests.get(download_url).content
     buf = io.BytesIO(report_data)
     with gzip.open(buf, 'rt') as f:
@@ -412,6 +438,7 @@ def request_and_download_report(profile_id, start_date, end_date, marketplace, r
     df = pd.json_normalize(report_json)
     json_data = json.loads(df.to_json(orient='records'))
     return json_data
+
 
 @app.route('/get-ad-report', methods=['GET'])
 def get_ad_report():
@@ -438,7 +465,8 @@ def get_ad_report():
                 break
 
         if not profile_id:
-            return jsonify({'status': 'error', 'message': 'Profile ID not found for the specified profile name and marketplace'}), 400
+            return jsonify({'status': 'error',
+                            'message': 'Profile ID not found for the specified profile name and marketplace'}), 400
 
         # Check for duplicate requests from the same user
         conn = sqlite3.connect('tokens.db')
@@ -469,7 +497,8 @@ def get_ad_report():
                     ''', (profile_id, start_date, end_date, report_type, time_unit, marketplace_str))
                     report_id = c.fetchone()[0]
                     conn.close()
-                    report_data = request_and_download_report(profile_id, start_date, end_date, marketplace, report_type, time_unit)
+                    report_data = request_and_download_report(profile_id, start_date, end_date, marketplace,
+                                                              report_type, time_unit)
                     return jsonify(report_data)
                 elif status == 'failed':
                     conn.close()
@@ -489,12 +518,14 @@ def get_ad_report():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+
 def refresh_access_token():
     try:
         get_access_token()
         print("Access token refreshed successfully")
     except Exception as e:
         print(f"Failed to refresh access token: {str(e)}")
+
 
 if __name__ == '__main__':
     scheduler = BackgroundScheduler()
