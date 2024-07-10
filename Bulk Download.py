@@ -93,13 +93,14 @@ def request_report(reports_api, report_type, start_time, end_time, asingranulari
         dataEndTime=end_time,
         reportOptions={'asinGranularity': asingranularity, 'dateGranularity': dategranularity}
     )
+
     return response.payload['reportId']
 
 
 def check_report_status(reports_api, report_id):
     status = 'IN_QUEUE'
     while status in ['IN_QUEUE', 'IN_PROGRESS']:
-        sleep(30)
+        sleep(10)
         report_response = reports_api.get_report(report_id)
         status = report_response.payload['processingStatus']
         print(f"Report status: {status}")
@@ -156,11 +157,11 @@ def home():
 @app.route('/get-monthly-reports', methods=['GET'])
 def get_monthly_reports():
     report_type = request.args.get('reportType', 'GET_SALES_AND_TRAFFIC_REPORT')
-    country_code = request.args.get('countryCode', 'US').upper()
+    country_code = request.args.get('countryCode', 'FR').upper()
     marketplace = marketplaces.get(country_code, Marketplaces.FR)  # Default to FR if not found
 
-    start_date = datetime(2021, 6, 1)  # Starting date: June 2021
-    end_date = datetime(2024, 6, 30)  # Ending date: June 2024
+    start_date = datetime(2024, 2, 1)  # Starting date: June 2021
+    end_date = datetime(2024, 2, 29)  # Ending date: June 2024
     current_date = start_date
 
     while current_date <= end_date:
@@ -170,7 +171,7 @@ def get_monthly_reports():
 
         year_month = current_date.strftime('%Y_%m')
         save_path = f'reports/{year_month}.csv'  # Save path with format Year/Month
-
+        print("Time range:{0} & {1}".format(start_time, end_time))
         record_path = request.args.get('recordPath', ['salesAndTrafficByAsin'])
 
         try:

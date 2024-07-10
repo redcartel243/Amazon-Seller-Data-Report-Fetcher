@@ -100,7 +100,7 @@ def request_report(reports_api, report_type, start_time, end_time, asingranulari
 def check_report_status(reports_api, report_id):
     status = 'IN_QUEUE'
     while status in ['IN_QUEUE', 'IN_PROGRESS']:
-        sleep(30)
+        sleep(10)
         report_response = reports_api.get_report(report_id)
         status = report_response.payload['processingStatus']
         print(f"Report status: {status}")
@@ -136,21 +136,23 @@ def request_and_download_report(report_type, marketplace, start_time, end_time, 
     marketplace_str = marketplace.name  # Convert Marketplaces enum to string
     cached_report_id = get_cached_report_id(report_type, marketplace_str, start_time, end_time, record_path)
     if cached_report_id:
-        #print(f"Using cached report ID: {cached_report_id}")
+        print(f"Using cached report ID: {cached_report_id}")
         report_id = cached_report_id
     else:
         reports_api = ReportsV2(credentials=credentials, marketplace=marketplace)
         report_id = request_report(reports_api, report_type, start_time, end_time)
         save_report_cache(report_type, marketplace_str, start_time, end_time, record_path, report_id)
-        #print(f"Created new report ID: {report_id}")
+        print(f"Created new report ID: {report_id}")
 
     reports_api = ReportsV2(credentials=credentials, marketplace=marketplace)
     document_id = check_report_status(reports_api, report_id)
     if document_id:
         content = download_report(reports_api, document_id)
         data = json.loads(content)
+        print("HERE 1:{0}\n".format(data))
         df = pd.json_normalize(data, record_path=record_path)
         json_data = json.loads(df.to_json(orient='records'))
+        print("HERE 2:{0}".format(json_data))
         return json_data
 
 
