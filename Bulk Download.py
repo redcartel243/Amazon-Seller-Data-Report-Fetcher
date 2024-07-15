@@ -160,8 +160,8 @@ def get_monthly_reports():
     country_code = request.args.get('countryCode', 'FR').upper()
     marketplace = marketplaces.get(country_code, Marketplaces.FR)  # Default to FR if not found
 
-    start_date = datetime(2024, 2, 1)  # Starting date: June 2021
-    end_date = datetime(2024, 2, 29)  # Ending date: June 2024
+    start_date = datetime(2024, 1, 1)  # Starting date: June 2021
+    end_date = datetime(2024, 6, 30)  # Ending date: June 2024
     current_date = start_date
 
     while current_date <= end_date:
